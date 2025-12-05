@@ -3,31 +3,65 @@ const app = express();
 const path = require ("path");
 const multer = require("multer");
 const fs = require("fs");
+const cors = require("cors");
 
+app.use(cors());
 app.use(express.json());
 app.use(express.static("public")); // allow images to be served
 
 // API route to return the correct image
 app.get("/api/getImage", (req, res) => {
     const name = req.query.name.toLowerCase();  //name = jerry
-const storage =multer.diskStorage({
-    destination: (req, file, cb) => cb(null, public),
-    image:(req, file, cb)=> {
-        const name = req.query.name.toLowerCase();
-    
+    if(!name){
+        return res.status(400).json({ error: "Name is required"});
+    }
 
-    let imaage = "default.jpg";
+    let image = "default.jpg";
 
     if (name.includes("tom")) image = "tom.jpg";
     if (name.includes("jerry")) image = "jerry.jpg";
     if (name.includes("dog")) image = "dog.jpg";
-cb(null, image);
-    res.json({ url: "/" + image });  
-    } 
+
+
+    const filePath=path.join(__dirname, "public" , `${name}.jpg`);
+if(fs.existsSync(filePath)){
+    return res.json({ image: `${name}.jpg` });
+}
+return res.status(404).json({error: "Image not found"});
+
 });
-const upload = multer({storage:storage});
+
+//multer setup for file upload
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, "public/");
+        },
+        filename: (req, file, cb) => {
+            cb(null, "tempUpload.jpg"); // temporary file name before renaming
+        }
+    })
+});
+
+
+    
+
 app.post("/api/upload", upload.single("image"),(req, res)=>{
-  res.json({ message: "upload successful" });    
+  const name=req.query.name;
+  
+  if(!name){
+    return res.status(400).json({error: "character name is required"});
+  }
+  if(!req.file){
+    return res.status(400).json({ error: "No image uploaded"});
+  }
+  const oldPath=path.join(__dirname, "public" , "tempUpload.jpg");
+  const newPath=path.join(__dirname, "public" , `${name}.jpg`);
+
+  fs.rename(oldPath, newPath, (err)=>{
+    if(err) return res.status(500).json({error:"File rename failed"});
+    res.json({ message:"Upload successful"});
+  });
 });
 
 // Start server
