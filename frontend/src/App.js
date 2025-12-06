@@ -10,12 +10,12 @@ function App() {
 
   //search image
   const handleSearch = async()=>{
-    const res = await fetch(`http://localhost:3001/api/getImage?name=${searchName}`);
+    const res = await fetch(`http://localhost:3001/api/getImage?name=${searchName.trim()}`);
     const data = await res.json();
 
     //if backend sends an image name
   if(data.image){
-    setImageUrl(`http://localhost:3001/${data.filename}?t=${Date.now()}`);
+    setImageUrl(`http://localhost:3001/${data.image}?t=${Date.now()}`);
     } else {
       alert("Image not found");
   }
